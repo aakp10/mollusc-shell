@@ -16,19 +16,15 @@ m_shell_change_state(m_shell_state *shell_state, enum state new_state)
 }
 
 int
-m_shell_is_valid_state_change(m_shell_state *shell_state, enum state new_state)
+m_shell_is_exit(m_shell_state *shell_state)
 {
-    
-    if(shell_state->running_state == UNCERTAIN) {
-        /**
-         * UNCERTAIN TO ENTRY => User wants to log in
-         */
-        if (new_state == ENTRY)
-            return 1;
-        /**
-         * UNCERTAIN TO EXIT => User hasn't logged in
-         */
-        if (new_state == EXIT)
-            return 0;
-    }
+    if (shell_state->running_state == UNCERTAIN || shell_state->running_state == EXIT)
+        return 1;
+    return 0;
+}
+
+enum state
+m_shell_get_state(m_shell_state *shell_state)
+{
+    return shell_state->running_state;
 }
