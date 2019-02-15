@@ -19,5 +19,5 @@ struct cmd_container{
 };
 
 struct cmd_container*  cmd_tokenize(char *cmd);
-
+void cmd_container_print(struct cmd_container *cmd_list_cnt);
 #endif

@@ -34,7 +34,7 @@ cmd_container_insert(struct cmd_container *cmd_list_cnt, char *cmd_ptr)
     cmd_list_cnt->cmd_count += 1;
 }
 
-static void
+void
 cmd_container_print(struct cmd_container *cmd_list_cnt)
 {
     struct cmd_entry *iter = cmd_list_cnt->cmd_list;

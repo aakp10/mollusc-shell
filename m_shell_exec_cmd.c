@@ -26,19 +26,25 @@ cmd_exec(struct cmd_container *cmd_list_cnt)
         /* List the args */
         char *cmd_dup = cmd->cmd;
         char **arg_list = (char **)malloc(20 * sizeof(char *));
-        while ((*(arg_list + count) = strsep(&cmd_dup, " ")) != NULL)
+        while ((*(arg_list + count) = strsep(&cmd_dup, " \t")) != NULL)
         {
             if (strlen(arg_list[count]) > 0)
             count++;
         }
         *(arg_list + count) = NULL;
-
+        for(int i = 0; i < count; i++)
+        {
+            printf("%s,\n", arg_list[i]);
+        }
         if (!fork()) {
-            if(index == 1)
+            if(index == 1 )
             {
-                int op_stream = open("output.txt", O_RDWR | O_CREAT| O_TRUNC, S_IRUSR | S_IWUSR);
-                dup2(op_stream, 1);
-                close(op_stream);
+                if (index != cmd_list_cnt->cmd_count)
+                {
+                     int op_stream = open("output.txt", O_RDWR | O_CREAT| O_TRUNC, S_IRUSR | S_IWUSR);
+                    dup2(op_stream, 1);
+                    close(op_stream);
+                }
             }
             else if(index == cmd_list_cnt->cmd_count) {
                 if (stream_nav == -1)
@@ -62,7 +68,7 @@ cmd_exec(struct cmd_container *cmd_list_cnt)
                 close(ip_stream);
                 close(op_stream);
             }
-            else {
+            else if (stream_nav == 1){
                 int ip_stream = open("input.txt", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
                 int op_stream = open("output.txt", O_RDWR | O_CREAT| O_TRUNC, S_IRUSR | S_IWUSR);
                 dup2(ip_stream, 0);
