@@ -25,6 +25,17 @@ m_shell_cmd_log(char *cmd_name, time_t exec_time, int status)
     fclose(fin);
 }
 
-
+void
+m_shell_op_log(char *cmd_name, char *op_fname)
+{
+    char ch;
+    FILE *fin = fopen(OP_LOG_FNAME, "a+");
+    FILE *fcp = fopen(op_fname, "r");
+    fprintf(fin, "\n%s\n", cmd_name);
+    while((ch = fgetc(fcp)) != EOF)
+        fprintf(fin, "%c", ch);
+    fclose(fcp);
+    fclose(fin);
+}
 
 
