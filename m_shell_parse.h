@@ -12,12 +12,12 @@ struct cmd_entry{
     struct cmd_entry* cmd_next;
 };
 
-struct cmd_cointainer{
+struct cmd_container{
     struct cmd_entry *cmd_list;
     struct cmd_entry *cmd_tail;
     int cmd_count;
 };
 
-struct cmd_cointainer*  cmd_tokenize(char *cmd);
+struct cmd_container*  cmd_tokenize(char *cmd);
 
 #endif
