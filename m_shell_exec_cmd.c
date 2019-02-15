@@ -78,23 +78,21 @@ cmd_exec(struct cmd_container *cmd_list_cnt)
         int status;
         wait(&status);
         //log this
-        time_t cur_time ;
-        time(&cur_time);
-        //printf("%d", status);
-        m_shell_cmd_log(arg_list[0], cur_time, status);
+        //if (state == LOGGING)
+        {
+            time_t cur_time ;
+            time(&cur_time);
+            //printf("%d", status);
+            m_shell_cmd_log(arg_list[0], cur_time, status);
+            // USE TEE
+            /*char *fnames[] = {"input.txt", "output.txt"};
+            if (stream_nav == 1)
+                m_shell_op_log(arg_list[0], fnames[1]);
+            else
+                m_shell_op_log(arg_list[0], fnames[0]);
+            */
+        }
         index++;
         cmd = cmd->cmd_next;
     }
-}
-
-#define bsz 80
-int main()
-{
-    char *cmd = (char*)malloc(bsz * sizeof(char*));
-    strcpy(cmd,"ls -lha -r| grep m_shell|sort |wc");
-    //strcpy(cmd," grep mollusc grep-test.c");
-    struct cmd_container *cmd_list_cnt = cmd_tokenize(cmd);
-    //cmd_container_print(cmd_list_cnt);
-    cmd_exec(cmd_list_cnt);
-return 0;
 }
