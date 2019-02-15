@@ -38,4 +38,22 @@ m_shell_op_log(char *cmd_name, char *op_fname)
     fclose(fin);
 }
 
+void
+m_shell_viewcmdlog()
+{
+    char ch;
+    FILE *fin = fopen(CMD_LOG_FNAME, "r");
+    while((ch = fgetc(fin)) != EOF)
+        fprintf(stdout, "%c", ch);
+    fclose(fin);
+}
 
+void
+m_shell_viewoutlog()
+{
+    char ch;
+    FILE *fin = fopen(OP_LOG_FNAME, "r");
+    while((ch = fgetc(fin)) != EOF)
+        fprintf(stdout, "%c", ch);
+    fclose(fin);
+}

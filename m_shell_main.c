@@ -2,8 +2,10 @@
 #include <string.h>
 #include "m_shell_setup.h"
 #include "m_shell_exec_cmd.h"
+#include "m_shell_log.h"
 
 #define MAX_LEN 80
+int logging = 0;
 int main(int argc, char *argv[])
 {
     char *cmd = NULL;
@@ -37,12 +39,36 @@ int main(int argc, char *argv[])
         else if (m_shell_get_state(shell_state) == ENTRY) {
             /* cmd to process */
             /*WIP*/
+            //log
+            if (strncmp(cmd, "log", len_read - 1) == 0) {
+                logging = 1;
+            }
+            //unlog
+            else if (strncmp(cmd, "unlog", len_read - 1) == 0) {
+                logging = 0;
+            }
+            //viewcmdlog
+            else if (strncmp(cmd, "viewcmdlog", len_read - 1) == 0) {
+                m_shell_viewcmdlog();
+            }
+            //viewoplog
+            else if (strncmp(cmd, "viewoutlog", len_read - 1) == 0) {
+                m_shell_viewoutlog();
+            }
+            //cd
+            else if (strncmp(cmd, "changedir", 9) == 0) {
+                cmd[strlen(cmd) - 1] = '\0';
+                cd(cmd);
+            }
+            else{
+            //external
             printf("%s", cmd);
             cmd[strlen(cmd)-1] = '\0';
             struct cmd_container *cmd_list_cnt = cmd_tokenize(cmd);
             cmd_container_print(cmd_list_cnt);
             printf("will be exec\n");
-            cmd_exec(cmd_list_cnt);
+            cmd_exec(cmd_list_cnt, logging);
+            }
         }
         else {
             fprintf(stdout, "? Enter a new session to continue\n");
