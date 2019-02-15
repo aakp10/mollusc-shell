@@ -22,6 +22,7 @@ void cmd_exec(struct cmd_container *cmd_list_cnt)
 
     struct cmd_entry *cmd = cmd_list_cnt->cmd_list;
     int index = 1;
+    int stream_nav = -1;
     printf("count:%d", cmd_list_cnt->cmd_count);
     while (cmd)
     {
@@ -30,14 +31,26 @@ void cmd_exec(struct cmd_container *cmd_list_cnt)
 
         int ip_stream = open("input.txt", O_RDWR|O_CREAT);
         int op_stream = open("output.txt", O_RDWR|O_CREAT);
+        stream_nav *= -1;
         if (!fork()) {
-            if(index != 1)
+            if(index == 1)
             {
-                dup2(op_stream, 0);
-            }
-                
-            if(index != cmd_list_cnt->cmd_count)
                 dup2(op_stream, 1);
+            }
+            else if(index == cmd_list_cnt->cmd_count) {
+                if (stream_nav == -1)
+                    dup2(op_stream, 0);
+                else
+                    dup2(op_stream, 0);
+            }
+            else  if (stream_nav == -1){
+                dup2(op_stream, 0);
+                dup2(ip_stream, 1);
+            }
+            else {
+                dup2(ip_stream, 0);
+                dup2(op_stream, 1);
+            }
             close(op_stream);
             close(ip_stream);
             int count = 0;
@@ -68,7 +81,7 @@ void cmd_exec(struct cmd_container *cmd_list_cnt)
 int main()
 {
     char *cmd = (char*)malloc(bsz * sizeof(char*));
-    strcpy(cmd,"ls -lha -r| wc");
+    strcpy(cmd,"ls -lha -r| grep mollusc|wc");
     //strcpy(cmd," grep mollusc grep-test.c");
     struct cmd_container *cmd_list_cnt = cmd_tokenize(cmd);
     //cmd_container_print(cmd_list_cnt);
