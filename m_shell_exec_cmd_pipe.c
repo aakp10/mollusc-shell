@@ -11,13 +11,16 @@
 #include <time.h>
 
 void
-cmd_exec(struct cmd_container *cmd_list_cnt, int logging)
+cmd_exec_pipe(struct cmd_container *cmd_list_cnt, int logging)
 {
-    int pipe_count = 2 * (cmd_list_cnt->cmd_count - 1);
+    int cmd_count = cmd_list_cnt->cmd_count;
+    int pipe_count = 2 * (cmd_count - 1);
     int pipefds[pipe_count];
     struct cmd_entry *cmd = cmd_list_cnt->cmd_list;
     int index = 1;
     int stream_nav = -1;
+    char *cmd_names[cmd_count];
+    pid_t cmd_pid[cmd_count];
     printf("count:%d", cmd_list_cnt->cmd_count);
     for(int i = 0; i < pipe_count; i += 2)
     {
@@ -46,8 +49,8 @@ cmd_exec(struct cmd_container *cmd_list_cnt, int logging)
             count++;
         }
         *(arg_list + count) = NULL;
-
-        if (!fork()) {
+        cmd_names[index - 1] = arg_list[0];
+        if ((cmd_pid[index - 1] = fork()) == 0) {
             if (index == 1)
             {
                 if (index != cmd_list_cnt->cmd_count)
@@ -62,23 +65,45 @@ cmd_exec(struct cmd_container *cmd_list_cnt, int logging)
             else if (index == cmd_list_cnt->cmd_count) {
                 dup2(pipefds[j-2], 0);
             }
-            // printf("indeex %d arg0 is%s\n", index, arg_list[0]);
-                for(int i = 0; i < pipe_count; i++)
-                {
-                    close(pipefds[i]);
-                }
+            
+            printf("indeex %d arg0 is%s\n", index, arg_list[0]);
+            for(int i = 0; i < pipe_count; i++)
+            {
+                close(pipefds[i]);
+            }
+            
             execvp(arg_list[0], arg_list);
             exit(-1);
         }
         int status;
         //wait(&status);
         //log this
-        /*if (logging)
+        index++;
+        j+=2;
+        cmd = cmd->cmd_next;
+    }
+    for(int i = 0; i < pipe_count; i++)
+    {
+        close(pipefds[i]);
+    }
+    pid_t pid;
+    int status;
+    while((pid = wait(&status)) != -1)
+    {
+        if (logging)
         {
             time_t cur_time ;
             time(&cur_time);
             //printf("%d", status);
-            m_shell_cmd_log(arg_list[0], cur_time, status);
+            for(int i = 0; i < cmd_count; i++)
+            {
+                if(pid == cmd_pid[i])
+                {
+                    m_shell_cmd_log(cmd_names[i], cur_time, status);
+                    break;
+                }
+            }
+            
             // USE TEE
             /*char *fnames[] = {"input.txt", "output.txt"};
             if (stream_nav == 1)
@@ -86,17 +111,8 @@ cmd_exec(struct cmd_container *cmd_list_cnt, int logging)
             else
                 m_shell_op_log(arg_list[0], fnames[0]);
             */
-        
-        index++;
-        j+=2;
-        cmd = cmd->cmd_next;
+        }
     }
-        for(int i = 0; i < pipe_count; i++)
-                {
-                    close(pipefds[i]);
-                }
-    while(wait(NULL) != -1);
-
 }
 
 int
@@ -124,17 +140,3 @@ cd(char *arg)
 	return 0;
 }
 
-#define bsz 80
-int main()
-{
-    char *cmd = (char*)malloc(bsz * sizeof(char*));
-    //strcpy(cmd,"ls -lha");
-    fgets(cmd, 80, stdin);
-    printf("%s", cmd);
-    cmd[strlen(cmd)-1] = '\0';
-    //strcpy(cmd," grep mollusc grep-test.c");
-    struct cmd_container *cmd_list_cnt = cmd_tokenize(cmd);
-    cmd_container_print(cmd_list_cnt);
-    cmd_exec(cmd_list_cnt, 0);
-    return 0;
-}

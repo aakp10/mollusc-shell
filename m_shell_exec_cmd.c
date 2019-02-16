@@ -43,11 +43,13 @@ cmd_exec(struct cmd_container *cmd_list_cnt, int logging)
                     close(op_stream);
                 }
             }
-            else if(index == cmd_list_cnt->cmd_count) {
+            /*else if(index == cmd_list_cnt->cmd_count) {
                 if (stream_nav == -1)
                 {
+                	int ip_stream = open("input.txt", O_RDWR | O_CREAT| O_TRUNC, S_IRUSR | S_IWUSR);
                     int op_stream = open("output.txt", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
                     dup2(op_stream, 0);
+                    dup2(ip_stream, 1);
                     close(op_stream);
                 }
                 else
@@ -56,7 +58,7 @@ cmd_exec(struct cmd_container *cmd_list_cnt, int logging)
                     dup2(ip_stream, 0);
                     close(ip_stream);
                 }
-            }
+            }*/
             else  if (stream_nav == -1){
                 int ip_stream = open("input.txt", O_RDWR | O_CREAT| O_TRUNC, S_IRUSR | S_IWUSR);
                 int op_stream = open("output.txt", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
@@ -98,6 +100,13 @@ cmd_exec(struct cmd_container *cmd_list_cnt, int logging)
         index++;
         cmd = cmd->cmd_next;
     }
+    char *f_name[] = {"input.txt", "output.txt"};
+    stream_nav = stream_nav == 1? stream_nav: 0;
+	char ch;
+	FILE *fin = fopen(f_name[stream_nav], "r");
+	while((ch = fgetc(fin)) != EOF)
+    	fprintf(stdout, "%c", ch);
+	fclose(fin);
 }
 
 int
