@@ -106,8 +106,8 @@ cmd_exec_pipe(struct cmd_container *cmd_list_cnt, int logging)
                 {
                     dup2(pipefds[j+1], 1);
                 }
-                close(int_pipe[1]);
-                close(int_pipe[0]);
+                //close(int_pipe[1]);
+                //close(int_pipe[0]);
             }
             else if (index != cmd_list_cnt->cmd_count) {
                 close(pipefds[j-1]);
