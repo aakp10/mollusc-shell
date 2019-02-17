@@ -15,3 +15,11 @@ Usual stuff
 
     It uses the int_pipe to redirect the stdout's content to the stdin.
     It turns out that at times(cmds w/ two pipes) it's returning `EAGAIN` error. I suppose this would be because the reader isn't running and hence the pipe buffer is full but at the same time I've made sure that no two related procs die.
+
+    ```
+    ./mollus-pipe
+    entry
+    ls =>works fine
+    ls|wc => just fine
+    ls|sort|wc => it breaks!
+    ```
