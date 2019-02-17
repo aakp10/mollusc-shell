@@ -11,83 +11,33 @@
 #include "m_shell_log.h"
 #include <time.h>
 #include <limits.h>
-#include <errno.h>
-
-void
-log_tee(int index, char **cmd_names, int j, int *pipefds, int *int_pipe, int pipe_count)
-{
-    if(index!= 1 && fork() == 0)
-    {
-        int len, slen;
-        int fd = open("output.log", O_RDWR | O_CREAT| O_TRUNC, S_IRUSR | S_IWUSR);
-        write(fd, cmd_names[index - 1], strlen(cmd_names[index - 1]));
-        close(int_pipe[j-2]);
-        do {
-            close(pipefds[j-1]);
-            len = tee(pipefds[j-2], int_pipe[j-1], INT_MAX, SPLICE_F_NONBLOCK);
-            if (len < 0) {
-                if (errno == EAGAIN)
-                {
-                    continue;
-                }
-                perror("tee");
-                exit(EXIT_FAILURE);
-            } else
-                if (len == 0)
-                    break;
-                while (len > 0) {
-                slen = splice(pipefds[j-2], NULL, fd, NULL,
-                                len, SPLICE_F_MOVE);
-                if (slen < 0) {
-                    perror("splice");
-                    break;
-                }
-                len -= slen;
-            }
-        } while (1);
-        close(fd);
-        close(int_pipe[j-1]);
-        for(int i = 0; i < pipe_count; i++)
-        {   //barbaric close- some of these are already closed and will return error.
-            close(pipefds[i]);
-            close(int_pipe[i]);
-        }
-        exit(0);
-    }
-}
 
 void
 cmd_exec_pipe(struct cmd_container *cmd_list_cnt, int logging)
 {
     int cmd_count = cmd_list_cnt->cmd_count;
-    int pipe_count = 2 * (cmd_count - 1);
+    int pipe_count = 2 * (cmd_count);
     int pipefds[pipe_count];
     struct cmd_entry *cmd = cmd_list_cnt->cmd_list;
     int index = 1;
-    int stream_nav = -1;
     char *cmd_names[cmd_count];
     pid_t cmd_pid[cmd_count];
-    int int_pipe[pipe_count];
-    pid_t pid;
-    int status;
-    int count;
-    int j = 0;
+    int op_stream;
+    char cmd_log_name[100] = "";
     for(int i = 0; i < pipe_count; i += 2)
     {
         if (pipe(pipefds + i) == -1) {
             perror("Pipe couldn't be initialised\n");
             //should you log here?
         }
-        //error check pending?
-        pipe(int_pipe + i);
     }
-
-
+    int j = 0;
     while (cmd)
     {
-        count = 0;
+        int count = 0;
         /* List the args */
         char *cmd_dup = cmd->cmd;
+        strcat(cmd_log_name, cmd_dup);
         char **arg_list = (char **)malloc(20 * sizeof(char *));
         while ((*(arg_list + count) = strsep(&cmd_dup, " \t")) != NULL)
         {
@@ -96,54 +46,51 @@ cmd_exec_pipe(struct cmd_container *cmd_list_cnt, int logging)
         }
         *(arg_list + count) = NULL;
         cmd_names[index - 1] = arg_list[0];
-
-        log_tee(index, cmd_names, j, pipefds, int_pipe, pipe_count);
-
         if ((cmd_pid[index - 1] = fork()) == 0) {
+
             if (index == 1)
-            {
-                if (index != cmd_list_cnt->cmd_count)
-                {
-                    dup2(pipefds[j+1], 1);
-                }
-                close(int_pipe[1]);
-                close(int_pipe[0]);
+            {   if(index == cmd_list_cnt->cmd_count)
+                    op_stream = open("output-int.log", O_RDWR|O_TRUNC| O_CREAT, S_IRUSR | S_IWUSR);
+                else
+                    op_stream = pipefds[j+1];
+                dup2(op_stream, 1);
+                dup2(op_stream, 2);
+                close(op_stream);
             }
             else if (index != cmd_list_cnt->cmd_count) {
-                close(pipefds[j-1]);
-                //dup2(pipefds[j-2], 0);
-                dup2(int_pipe[j-2], 0);
-                close(int_pipe[j-2]);
-                close(int_pipe[j-1]);
-                dup2(pipefds[j+1], 1);
+                dup2(pipefds[j-2], 0);
+                op_stream = pipefds[j+1];
+                dup2(op_stream, 1);
+                dup2(op_stream, 2);
             }
             else if (index == cmd_list_cnt->cmd_count) {
-                close(int_pipe[j-1]);
-                dup2(int_pipe[j-2], 0);
-                //dup2(pipefds[j-2], 0);
-                close(int_pipe[j-2]);
+                op_stream = open("output-int.log", O_RDWR|O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR);
+                dup2(pipefds[j-2], 0);
+                dup2(op_stream, 1);
+                dup2(op_stream, 2);
+                close(op_stream);
             }
 
             for(int i = 0; i < pipe_count; i++)
             {
                 close(pipefds[i]);
-                close(int_pipe[i]);
             }
             execvp(arg_list[0], arg_list);
+            printf("The command %s not found\n", arg_list[0]);
             exit(-1);
         }
-        int status;
-
+        if(index != cmd_count)
+            strcat(cmd_log_name, " | ");
         index++;
-        j+=2;
+        j += 2;
         cmd = cmd->cmd_next;
     }
-    for(int i = 0; i < pipe_count; i++)
+    for(int i = 0; i < pipe_count - 2; i++)
     {
         close(pipefds[i]);
-        close(int_pipe[i]);
     }
-
+    pid_t pid;
+    int status;
     while((pid = wait(&status)) != -1)
     {
         if (logging)
@@ -160,6 +107,18 @@ cmd_exec_pipe(struct cmd_container *cmd_list_cnt, int logging)
                 }
             }
         }
+    }
+    char ch;
+    FILE *fin = fopen("output-int.log", "r");
+    if (logging)
+        m_shell_op_log(cmd_log_name, "output-int.log");
+    if(fin)
+    {
+        while((ch = fgetc(fin)) != EOF)
+        {
+            fprintf(stdout, "%c", ch);
+        }
+        fclose(fin);
     }
 }
 
@@ -187,4 +146,3 @@ cd(char *arg)
     }
 	return 0;
 }
-

@@ -20,6 +20,11 @@ m_shell_cmd_log(char *cmd_name, time_t exec_time, int status)
     status = status == 0? status: 1;
     //cmd_name date time status(0/ !0)
     FILE *fin = fopen(CMD_LOG_FNAME, "a+");
+    if (fin == NULL)
+    {
+        perror("failed");
+        return;
+    }
     fprintf(fin, "%s %02d/%02d/%02d %02d:%02d:%02d %s\n",
                 cmd_name, day, mth, yr, hr, min, sec, status_msg[status]);
     fclose(fin);
@@ -31,6 +36,11 @@ m_shell_op_log(char *cmd_name, char *op_fname)
     char ch;
     FILE *fin = fopen(OP_LOG_FNAME, "a+");
     FILE *fcp = fopen(op_fname, "r");
+    if (fin == NULL || fcp == NULL)
+    {
+        perror("failed");
+        return;
+    }
     fprintf(fin, "\n%s\n", cmd_name);
     while((ch = fgetc(fcp)) != EOF)
         fprintf(fin, "%c", ch);
@@ -43,6 +53,11 @@ m_shell_viewcmdlog()
 {
     char ch;
     FILE *fin = fopen(CMD_LOG_FNAME, "r");
+    if (fin == NULL)
+    {
+        perror("failed");
+        return;
+    }
     while((ch = fgetc(fin)) != EOF)
         fprintf(stdout, "%c", ch);
     fclose(fin);
@@ -53,6 +68,11 @@ m_shell_viewoutlog()
 {
     char ch;
     FILE *fin = fopen(OP_LOG_FNAME, "r");
+    if (fin == NULL)
+    {
+        perror("failed");
+        return;
+    }
     while((ch = fgetc(fin)) != EOF)
         fprintf(stdout, "%c", ch);
     fclose(fin);

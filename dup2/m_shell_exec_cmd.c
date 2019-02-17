@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include "m_shell_parse.h"
 #include <error.h>
@@ -36,36 +37,12 @@ cmd_exec(struct cmd_container *cmd_list_cnt, int logging)
         *(arg_list + count) = NULL;
 
         if (!fork()) {
-           /* if(index == 1 )
-            {
-                if (index != cmd_list_cnt->cmd_count)
-                {
-                    int op_stream = open("output.txt", O_RDWR | O_CREAT| O_TRUNC, S_IRUSR | S_IWUSR);
-                    dup2(op_stream, 1);
-                    close(op_stream);
-                }
-            }*/
-            /*else if(index == cmd_list_cnt->cmd_count) {
-                if (stream_nav == -1)
-                {
-                	int ip_stream = open("input.txt", O_RDWR | O_CREAT| O_TRUNC, S_IRUSR | S_IWUSR);
-                    int op_stream = open("output.txt", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-                    dup2(op_stream, 0);
-                    dup2(ip_stream, 1);
-                    close(op_stream);
-                }
-                else
-                {
-                    int ip_stream = open("input.txt", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-                    dup2(ip_stream, 0);
-                    close(ip_stream);
-                }
-            }*/
             if (stream_nav == -1){
                 int ip_stream = open("input.txt", O_RDWR | O_CREAT| O_TRUNC, S_IRUSR | S_IWUSR);
                 int op_stream = open("output.txt", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
                 dup2(op_stream, 0);
                 dup2(ip_stream, 1);
+                dup2(ip_stream, 2);
                 close(ip_stream);
                 close(op_stream);
             }
@@ -74,12 +51,14 @@ cmd_exec(struct cmd_container *cmd_list_cnt, int logging)
                 int op_stream = open("output.txt", O_RDWR | O_CREAT| O_TRUNC, S_IRUSR | S_IWUSR);
                 dup2(ip_stream, 0);
                 dup2(op_stream, 1);
+                dup2(op_stream, 1);
                 close(ip_stream);
                 close(op_stream);
             }
 
            // printf("indeex %d arg0 is%s\n", index, arg_list[0]);
             execvp(arg_list[0], arg_list);
+            printf("The command %s not found", arg_list[0]);
             exit(-1);
             }
         int status;
@@ -91,7 +70,6 @@ cmd_exec(struct cmd_container *cmd_list_cnt, int logging)
             time(&cur_time);
             //printf("%s", cmd_log_name);
             m_shell_cmd_log(cmd_log_name, cur_time, status);
-            // USE TEE
             char *fnames[] = {"input.txt", "output.txt"};
             if(stream_nav == 1)
             {
@@ -100,25 +78,31 @@ cmd_exec(struct cmd_container *cmd_list_cnt, int logging)
             else {
                 m_shell_op_log(cmd_log_name, fnames[0]);
             }
-            
-            //
         }
         index++;
         cmd = cmd->cmd_next;
         strcat(cmd_log_name, " | ");
     }
     char *f_name[] = {"input.txt", "output.txt"};
-    stream_nav = stream_nav == 1? stream_nav: 0;
+    FILE *fin;
+    if(stream_nav == 1)
+        fin = fopen(f_name[1], "r");
+    else 
+        fin = fopen(f_name[0], "r");
 	char ch;
-	FILE *fin = fopen(f_name[stream_nav], "r");
+	
     //FILE *fcp = fopen("output.log", "a+");
-	while((ch = fgetc(fin)) != EOF)
+    if(fin)
     {
-        fprintf(stdout, "%c", ch);
-        //fprintf(fcp, "%c", ch);
-    }
-    //fclose(fcp);
+        while((ch = fgetc(fin)) != EOF)
+        {
+            fprintf(stdout, "%c", ch);
+            //fprintf(fcp, "%c", ch);
+        }
+        //fclose(fcp);
 	fclose(fin);
+    }
+	
 }
 
 int
@@ -145,18 +129,3 @@ cd(char *arg)
     }
 	return 0;
 }
-
-/*#define bsz 80
-int main()
-{
-    char *cmd = (char*)malloc(bsz * sizeof(char*));
-    //strcpy(cmd,"ls -lha");
-    fgets(cmd, 80, stdin);
-    printf("%s", cmd);
-    cmd[strlen(cmd)-1] = '\0';
-    //strcpy(cmd," grep mollusc grep-test.c");
-    struct cmd_container *cmd_list_cnt = cmd_tokenize(cmd);
-    cmd_container_print(cmd_list_cnt);
-    cmd_exec(cmd_list_cnt);
-    return 0;
-}*/

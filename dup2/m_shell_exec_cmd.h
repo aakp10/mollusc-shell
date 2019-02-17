@@ -3,5 +3,5 @@
 
 #include "m_shell_parse.h"
 void    cmd_exec(struct cmd_container *cmd_list_cnt, int logging);
-void    cd(char *arg);
+int    cd(char *arg);
 #endif

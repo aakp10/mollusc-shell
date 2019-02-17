@@ -3,6 +3,7 @@
 #include "m_shell_setup.h"
 #include "m_shell_exec_cmd.h"
 #include "m_shell_log.h"
+#include <stdlib.h>
 
 #define MAX_LEN 80
 int logging = 0;
@@ -56,7 +57,7 @@ int main(int argc, char *argv[])
                 m_shell_viewoutlog();
             }
             //cd
-            else if (strncmp(cmd, "changedir", 9) == 0) {
+            else if (strncmp(cmd, "changedir", strlen("changedir")) == 0) {
                 cmd[strlen(cmd) - 1] = '\0';
                 cd(cmd);
             }
@@ -68,10 +69,14 @@ int main(int argc, char *argv[])
             //cmd_container_print(cmd_list_cnt);
             //printf("will be exec\n");
             cmd_exec(cmd_list_cnt, logging);
+            free(cmd_list_cnt);
             }
         }
-        else {
-            fprintf(stdout, "? Enter a new session to continue\n");
+        else if (m_shell_get_state(shell_state) == UNCERTAIN) {
+            fprintf(stdout, "? Command line interpreter not started\n");
+        }
+        else if (m_shell_get_state(shell_state) == EXIT) {
+            fprintf(stdout, "? Command line interpreter exited\n");
         }
     }
     return 0;

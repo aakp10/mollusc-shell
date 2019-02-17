@@ -3,7 +3,7 @@
 #include "m_shell_setup.h"
 #include "m_shell_exec_cmd_pipe.h"
 #include "m_shell_log.h"
-
+#include <stdlib.h>
 #define MAX_LEN 80
 int logging = 0;
 int main(int argc, char *argv[])
@@ -62,16 +62,20 @@ int main(int argc, char *argv[])
             }
             else{
             //external
-            printf("%s", cmd);
+            //printf("%s", cmd);
             cmd[strlen(cmd)-1] = '\0';
             struct cmd_container *cmd_list_cnt = cmd_tokenize(cmd);
-            cmd_container_print(cmd_list_cnt);
-            printf("will be exec\n");
+            //cmd_container_print(cmd_list_cnt);
+            //printf("will be exec\n");
             cmd_exec_pipe(cmd_list_cnt, logging);
+            free(cmd_list_cnt);
             }
         }
-        else {
-            fprintf(stdout, "? Enter a new session to continue\n");
+        else if (m_shell_get_state(shell_state) == UNCERTAIN) {
+            fprintf(stdout, "? Command line interpreter not started\n");
+        }
+        else if (m_shell_get_state(shell_state) == EXIT) {
+            fprintf(stdout, "? Command line interpreter exited\n");
         }
     }
     return 0;
